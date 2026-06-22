@@ -1,22 +1,6 @@
-# Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-
-# Config (contains secrets)
+*.pyc
 config.json
-
-# Output
 accounts.json
-
-# OS
-.DS_Store
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
 *.log
+.DS_Store
