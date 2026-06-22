@@ -305,14 +305,26 @@ class Registrar:
 
         # 3. Solve Turnstile via 2captcha
         step(index, "2captcha 解 Turnstile", "cyan")
-        turnstile_token = self.captcha.solve_turnstile(f"{TARGET_BASE}/login")
+        turnstile_token = self.captcha.solve_turnstile(
+            f"{TARGET_BASE}/login",
+            user_agent=USER_AGENT
+        )
         step(index, f"Turnstile 通过 (len={len(turnstile_token)})", "green")
 
         # 4. Send email code
         step(index, "发送邮箱验证码", "cyan")
+        visitor_id = "".join(random.choices(string.ascii_letters + string.digits, k=20))
+        request_id = f"{int(time.time() * 1000)}.{''.join(random.choices(string.ascii_letters, k=6))}"
         send_resp = self._post(
             "/login/email/code/send",
-            payload={"email": email, "token": turnstile_token},
+            payload={
+                "email": email,
+                "token": turnstile_token,
+                "fingerprint": {
+                    "visitorId": visitor_id,
+                    "requestId": request_id
+                }
+            },
             referer=f"{TARGET_BASE}/login",
         )
         if not send_resp.get("success"):
@@ -351,7 +363,11 @@ class Registrar:
         # (ZenMux may report needVerify=False but still block api_key/create
         #  with 423 "not whitelisted" until reCAPTCHA is completed)
         step(index, "2captcha 解 reCAPTCHA v2", "cyan")
-        recaptcha_token = self.captcha.solve_recaptcha(f"{TARGET_BASE}/verify?method=unknown")
+        recaptcha_token = self.captcha.solve_recaptcha(
+            f"{TARGET_BASE}/verify?method=unknown",
+            user_agent=USER_AGENT,
+            proxy=self.proxy
+        )
         step(index, f"reCAPTCHA 通过 (len={len(recaptcha_token)})", "green")
 
         # 9. Submit recaptcha verification

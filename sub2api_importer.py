@@ -75,7 +75,7 @@ class Sub2APIImporter:
         r = self._session.post(
             f"{self.base_url}/api/v1/admin/groups",
             headers=self.headers,
-            json={"name": self.group_name, "description": "auto-registered accounts"},
+            json={"name": self.group_name, "description": "auto-registered accounts", "rate_multiplier": 1.0},
             timeout=15,
         )
         data = r.json()

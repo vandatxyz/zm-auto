@@ -28,22 +28,34 @@ class CaptchaSolver:
     # ------------------------------------------------------------------ #
     # Turnstile
     # ------------------------------------------------------------------ #
-    def solve_turnstile(self, page_url: str = "https://example.com/login", timeout: int = 120) -> str:
+    def solve_turnstile(self, page_url: str = "https://example.com/login", timeout: int = 120, user_agent: str = "", proxy: str = "") -> str:
         """Submit Cloudflare Turnstile to 2captcha and return the token."""
         if self.provider == "2captcha":
-            return self._solve_2captcha_turnstile(page_url, timeout)
+            return self._solve_2captcha_turnstile(page_url, timeout, user_agent, proxy)
         raise RuntimeError(f"Turnstile 暂不支持 provider: {self.provider}")
 
-    def _solve_2captcha_turnstile(self, page_url: str, timeout: int) -> str:
+    def _solve_2captcha_turnstile(self, page_url: str, timeout: int, user_agent: str = "", proxy: str = "") -> str:
+        payload = {
+            "key": self.api_key,
+            "method": "turnstile",
+            "sitekey": TURNSTILE_SITE_KEY,
+            "pageurl": page_url,
+            "json": 1,
+        }
+        if user_agent:
+            payload["userAgent"] = user_agent
+        if proxy:
+            p_str = proxy
+            p_type = "HTTP"
+            if "://" in p_str:
+                scheme, _, p_str = p_str.partition("://")
+                p_type = scheme.upper()
+            payload["proxy"] = p_str
+            payload["proxytype"] = p_type
+
         r = requests.post(
             "https://2captcha.com/in.php",
-            data={
-                "key": self.api_key,
-                "method": "turnstile",
-                "sitekey": TURNSTILE_SITE_KEY,
-                "pageurl": page_url,
-                "json": 1,
-            },
+            data=payload,
             timeout=30,
         )
         data = r.json()
@@ -55,24 +67,36 @@ class CaptchaSolver:
     # ------------------------------------------------------------------ #
     # reCAPTCHA v2
     # ------------------------------------------------------------------ #
-    def solve_recaptcha(self, page_url: str = "https://example.com/verify", timeout: int = 180) -> str:
+    def solve_recaptcha(self, page_url: str = "https://example.com/verify", timeout: int = 180, user_agent: str = "", proxy: str = "") -> str:
         """Submit Google reCAPTCHA v2 to 2captcha/anticaptcha and return token."""
         if self.provider == "2captcha":
-            return self._solve_2captcha_recaptcha(page_url, timeout)
+            return self._solve_2captcha_recaptcha(page_url, timeout, user_agent, proxy)
         if self.provider == "anticaptcha":
             return self._solve_anticaptcha_recaptcha(page_url, timeout)
         raise RuntimeError(f"reCAPTCHA 暂不支持 provider: {self.provider}")
 
-    def _solve_2captcha_recaptcha(self, page_url: str, timeout: int) -> str:
+    def _solve_2captcha_recaptcha(self, page_url: str, timeout: int, user_agent: str = "", proxy: str = "") -> str:
+        params = {
+            "key": self.api_key,
+            "method": "userrecaptcha",
+            "googlekey": RECAPTCHA_SITE_KEY,
+            "pageurl": page_url,
+            "json": 1,
+        }
+        if user_agent:
+            params["userAgent"] = user_agent
+        if proxy:
+            p_str = proxy
+            p_type = "HTTP"
+            if "://" in p_str:
+                scheme, _, p_str = p_str.partition("://")
+                p_type = scheme.upper()
+            params["proxy"] = p_str
+            params["proxytype"] = p_type
+
         r = requests.get(
             "https://2captcha.com/in.php",
-            params={
-                "key": self.api_key,
-                "method": "userrecaptcha",
-                "googlekey": RECAPTCHA_SITE_KEY,
-                "pageurl": page_url,
-                "json": 1,
-            },
+            params=params,
             timeout=30,
         )
         data = r.json()
